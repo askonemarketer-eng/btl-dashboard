@@ -1,1 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BringTheLove P&L</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090c;--surface:#0e1318;--surface2:#141b22;--surface3:#1a2330;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);
+  --text:#e8ecf0;--muted:#4e5c6a;--muted2:#7a8a96;
+  --green:#00d68f;--green-bg:rgba(0,214,143,0.08);--green-glow:rgba(0,214,143,0.2);
+  --red:#ff4d6d;--amber:#f59e0b;
+  --rumble:#8bc34a;--newsbreak:#ef8c1e;--meta:#3b82f6;--tiktok:#ee1d52;
+  --font:'Syne',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
 
+/* HEADER */
+header{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 2rem;
+  background:rgba(7,9,12,0.96);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.logo{display:flex;align-items:center;gap:10px}
+.pulse{width:9px;height:9px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--green-glow)}50%{box-shadow:0 0 0 7px transparent}}
+.logo-name{font-size:15px;font-weight:700}
+.logo-sub{font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.status{display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--muted2);padding:5px 10px;border:1px solid var(--border);border-radius:20px}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--muted)}
+.sdot.live{background:var(--green);box-shadow:0 0 5px var(--green)}
+.sdot.saving{background:var(--amber)}
+.sdot.err{background:var(--red)}
+.btn{padding:8px 16px;border-radius:8px;font-size:13px;font-family:var(--font);font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text);transition:all .15s;display:flex;align-items:center;gap:5px}
+.btn:hover{background:var(--surface3)}
+.btn-accent{background:var(--green);color:#000;border-color:transparent}
+.btn-accent:hover{background:#00f0a0;transform:translateY(-1px);box-shadow:0 4px 20px var(--green-glow)}
+
+/* LAYOUT */
+main{max-width:1520px;margin:0 auto;padding:2rem}
+.section-title{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.15em;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+/* HERO COMMISSION */
+.hero{background:linear-gradient(135deg,rgba(0,214,143,0.07),rgba(0,214,143,0.02));border:1px solid rgba(0,214,143,0.18);border-radius:16px;padding:2rem;margin-bottom:12px;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;top:-80px;right:-80px;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(0,214,143,0.06),transparent 70%);pointer-events:none}
+.hero-tag{font-size:10px;font-family:var(--mono);color:rgba(0,214,143,0.55);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1.5rem}
+.hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem}
+.hi-label{font-size:10px;font-family:var(--mono);color:rgba(0,214,143,0.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.hi-val{font-size:30px;font-weight:800;font-family:var(--mono);color:var(--green);line-height:1}
+.hi-sub{font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:5px}
+
+/* TWO CARDS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:2rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem}
+.card-title{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1.25rem}
+.card-g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem}
+.ci-label{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.ci-val{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--green)}
+.ci-sub{font-size:10px;color:var(--muted2);font-family:var(--mono);margin-top:4px}
+.amber-card{background:rgba(245,158,11,0.04);border-color:rgba(245,158,11,0.15)}
+.amber-card .ci-val{color:var(--amber)}
+.override-row{display:flex;align-items:center;gap:10px;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);flex-wrap:wrap}
+.ov-label{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.ov-input{background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:6px;padding:7px 12px;color:var(--text);font-family:var(--mono);font-size:13px;width:140px;outline:none;transition:border-color .15s}
+.ov-input:focus{border-color:var(--green)}
+.ov-note{font-size:10px;color:var(--muted);font-family:var(--mono)}
+
+/* CALCULATOR */
+.calc{background:var(--surface);border:1px solid rgba(0,214,143,0.15);border-radius:16px;padding:2rem;margin-bottom:2rem}
+.calc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:12px}
+.calc-period{font-size:15px;font-weight:700;font-family:var(--mono);color:var(--green)}
+.period-btns{display:flex;gap:6px}
+.pbtn{background:var(--surface2);border:1px solid var(--border);color:var(--muted2);padding:5px 14px;border-radius:6px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .15s}
+.pbtn.active{background:var(--green-bg);border-color:rgba(0,214,143,0.3);color:var(--green)}
+.calc-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+.cr-label{font-size:13px;color:var(--muted2);font-family:var(--mono);display:flex;align-items:center;gap:7px}
+.atag{font-size:9px;background:rgba(0,214,143,0.1);color:var(--green);padding:2px 7px;border-radius:4px;letter-spacing:.05em}
+.cr-val{font-size:13px;font-family:var(--mono);font-weight:500}
+.red{color:var(--red)}.grn{color:var(--green)}.neu{color:var(--text)}.mut{color:var(--muted2)}
+.calc-net{display:flex;justify-content:space-between;padding:12px 0 0;margin-top:4px;border-top:2px solid var(--border2)}
+.cn-label{font-size:14px;font-weight:700;font-family:var(--mono)}
+.cn-val{font-size:18px;font-weight:700;font-family:var(--mono)}
+.result{background:linear-gradient(135deg,rgba(0,214,143,0.09),rgba(0,214,143,0.02));border:1px solid rgba(0,214,143,0.22);border-radius:12px;padding:1.5rem;margin-top:1.25rem;text-align:center}
+.result-tag{font-size:10px;font-family:var(--mono);color:rgba(0,214,143,0.6);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.result-amt{font-size:54px;font-weight:800;font-family:var(--mono);color:var(--green);line-height:1}
+.result-sub{font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:8px}
+.calc-note{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);line-height:1.8}
+
+/* GOALS */
+.goals{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:2rem}
+.goal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.goal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.goal-name{font-size:13px;font-weight:600}
+.goal-nums{font-size:11px;font-family:var(--mono);color:var(--muted2);margin-bottom:7px}
+.goal-track{height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;margin-bottom:5px}
+.goal-bar{height:100%;border-radius:2px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.goal-pct{font-size:11px;font-family:var(--mono);color:var(--muted);text-align:right}
+
+/* SUMMARY */
+.sum-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.plat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:2rem}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.scard.r{border-color:rgba(139,195,74,0.2);background:rgba(139,195,74,0.03)}
+.scard.n{border-color:rgba(239,140,30,0.2);background:rgba(239,140,30,0.03)}
+.scard.g{border-color:rgba(0,214,143,0.15)}
+.s-label{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.s-val{font-size:24px;font-weight:700;font-family:var(--mono)}
+.s-sub{font-size:11px;font-family:var(--mono);color:var(--muted2);margin-top:4px}
+.rcol{color:#a8d56e}.ncol{color:#f0a050}.gcol{color:var(--green)}
+.pos{color:var(--green)}.neg{color:var(--red)}
+
+/* CHARTS */
+.charts{display:grid;grid-template-columns:1fr 1fr 300px;gap:14px;margin-bottom:2rem}
+.chart-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem}
+.chart-title{font-size:11px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.chart-wrap{position:relative;height:190px}
+.legend{display:flex;gap:12px;flex-wrap:wrap}
+.li{display:flex;align-items:center;gap:4px;font-size:10px;font-family:var(--mono);color:var(--muted2)}
+.ldot{width:7px;height:7px;border-radius:50%}
+.roas-item{margin-bottom:14px}
+.ri-head{display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);margin-bottom:4px}
+.ri-range{color:var(--muted2)}.ri-val{font-weight:500}
+.ri-track{height:3px;background:var(--surface3);border-radius:2px;overflow:hidden}
+.ri-bar{height:100%;border-radius:2px;transition:width .6s}
+.ri-plats{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+.rp{font-size:10px;font-family:var(--mono)}
+
+/* TABLE */
+.tbl-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:2rem}
+.tbl-head{display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
+.tbl-title{font-size:11px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.tbl-hint{font-size:11px;font-family:var(--mono);color:var(--muted)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:9px 10px;text-align:right;border-bottom:1px solid var(--border);font-weight:400;white-space:nowrap;background:var(--surface)}
+th:first-child{text-align:left}
+th.rh{color:#a8d56e}th.nh{color:#f0a050}th.gh{color:var(--green)}
+td{padding:0;border-bottom:1px solid var(--border);text-align:right;vertical-align:middle}
+td:first-child{text-align:left}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.015)}
+tr.tot td{background:rgba(255,255,255,0.02);border-top:1px solid var(--border2)}
+td input{background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:12px;padding:10px;width:100%;text-align:inherit;outline:none;min-width:75px}
+td input[type=text]{min-width:120px;text-align:left}
+td input:focus{background:rgba(0,214,143,0.04)}
+td.rc input:focus{background:rgba(139,195,74,0.05)}
+td.nc input:focus{background:rgba(239,140,30,0.05)}
+td.mc input:focus{background:rgba(59,130,246,0.05)}
+td.tc input:focus{background:rgba(238,29,82,0.05)}
+.cmp{padding:10px;font-family:var(--mono);font-size:12px;white-space:nowrap}
+.add-row{width:100%;padding:14px;background:transparent;border:none;border-top:1px solid var(--border);color:var(--muted);font-size:13px;font-family:var(--font);font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s}
+.add-row:hover{background:var(--surface2);color:var(--text)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:600;padding:10px 22px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;background:var(--green);color:#000;font-family:var(--font)}
+.toast.show{opacity:1}
+.toast.err{background:var(--red);color:#fff}
+
+@media(max-width:1100px){.hero-grid,.two-col,.sum-row,.plat-row,.charts,.goals{grid-template-columns:1fr 1fr}main{padding:1rem}}
+@media(max-width:640px){.hero-grid,.two-col,.sum-row,.plat-row,.goals{grid-template-columns:1fr}.charts{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="pulse"></div>
+    <div>
+      <div class="logo-name">BringTheLove P&L</div>
+      <div class="logo-sub">2026 · Rumble & NewsBreak</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="status"><span class="sdot" id="sdot"></span><span id="stxt" style="font-family:var(--mono)">Connecting…</span></div>
+    <button class="btn" onclick="addWeek()">+ Add Week</button>
+    <button class="btn btn-accent" onclick="exportCSV()">↓ Export CSV</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ══ STEVEN'S 50% COMMISSION ══ -->
+<div class="section-title">💰 Steven's 50% Commission — What ShineOn Owes You</div>
+
+<div class="hero" style="margin-bottom:12px">
+  <div class="hero-tag">📅 Today — Estimated from Latest Week</div>
+  <div class="hero-grid">
+    <div><div class="hi-label">Today's Revenue</div><div class="hi-val" id="t_rev">$0.00</div><div class="hi-sub">Est. from last week avg</div></div>
+    <div><div class="hi-label">Store Net Profit Est.</div><div class="hi-val" id="t_net">$0.00</div><div class="hi-sub">After all deductions</div></div>
+    <div><div class="hi-label">Steven's 50% Today</div><div class="hi-val" id="t_50">$0.00</div><div class="hi-sub">Your estimated cut</div></div>
+    <div><div class="hi-label">Orders Today</div><div class="hi-val" id="t_ord">0</div><div class="hi-sub">Est. from last week</div></div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-title">📈 This Month — Running Total</div>
+    <div class="card-g3">
+      <div><div class="ci-label">Month Revenue</div><div class="ci-val" id="m_rev">$0.00</div><div class="ci-sub">All weeks this month</div></div>
+      <div><div class="ci-label">Steven's 50% MTD</div><div class="ci-val" id="m_50">$0.00</div><div class="ci-sub" id="m_note">True net × 50%</div></div>
+      <div><div class="ci-label">Projected Month</div><div class="ci-val" id="m_proj">$0.00</div><div class="ci-sub" id="m_days">— days left</div></div>
+    </div>
+    <div class="override-row">
+      <span class="ov-label">ShineOn Paid:</span>
+      <input type="number" class="ov-input" id="actual_pay" placeholder="Enter amount" step="0.01" oninput="saveActual()">
+      <span class="ov-note">Enter when ShineOn pays you — overrides estimate</span>
+    </div>
+  </div>
+  <div class="card amber-card">
+    <div class="card-title" style="color:rgba(245,158,11,0.6)">🏆 All Time — Since March 2026</div>
+    <div class="card-g3">
+      <div><div class="ci-label">Total Revenue</div><div class="ci-val" id="a_rev">$0.00</div><div class="ci-sub">All weeks combined</div></div>
+      <div><div class="ci-label">Total Owed to Steven</div><div class="ci-val" id="a_50">$0.00</div><div class="ci-sub">Est. 50% commission</div></div>
+      <div><div class="ci-label">Avg Weekly Earnings</div><div class="ci-val" id="a_avg">$0.00</div><div class="ci-sub">Per week average</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PROFIT CALCULATOR ══ -->
+<div class="section-title">🧾 True 50% Commission — Per Media Buying Agreement Section 5</div>
+<div class="calc">
+  <div class="calc-head">
+    <div>
+      <div style="font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">Period</div>
+      <div class="calc-period" id="inv_period">Loading…</div>
+    </div>
+    <div class="period-btns">
+      <button class="pbtn active" onclick="setPeriod('current',this)">Current Week</button>
+      <button class="pbtn" onclick="setPeriod('previous',this)">Previous Week</button>
+      <button class="pbtn" onclick="setPeriod('month',this)">Full Month</button>
+    </div>
+  </div>
+
+  <div class="calc-row"><div class="cr-label">Gross Revenue <span class="atag">AUTO</span></div><div class="cr-val neu" id="i_gross">$0.00</div></div>
+  <div class="calc-row"><div class="cr-label">Minus COGS (product cost) <span class="atag">AUTO</span></div><div class="cr-val red" id="i_cogs">-$0.00</div></div>
+  <div class="calc-row"><div class="cr-label">Minus Discounts <span class="atag">AUTO</span></div><div class="cr-val red" id="i_disc">-$0.00</div></div>
+  <div class="calc-row"><div class="cr-label">Minus Ad Spend (Rumble + NewsBreak) <span class="atag">AUTO</span></div><div class="cr-val red" id="i_ads">-$0.00</div></div>
+  <div class="calc-row"><div class="cr-label">Minus Shipping ($6.31/order) <span class="atag">AUTO</span></div><div class="cr-val red" id="i_ship">-$0.00</div></div>
+  <div class="calc-row"><div class="cr-label">Minus Payment Processing (2.9%) <span class="atag">AUTO</span></div><div class="cr-val red" id="i_proc">-$0.00</div></div>
+  <div class="calc-row"><div class="cr-label">Minus Shopify & App Fees <span class="atag">AUTO</span></div><div class="cr-val red" id="i_fees">-$0.00</div></div>
+  <div class="calc-row"><div class="cr-label">Minus Refunds <span class="atag">AUTO</span></div><div class="cr-val red" id="i_ref">-$0.00</div></div>
+
+  <div class="calc-net">
+    <div class="cn-label">Store Net Profit</div>
+    <div class="cn-val" id="i_net">$0.00</div>
+  </div>
+
+  <div class="result">
+    <div class="result-tag">Steven's True 50% Commission</div>
+    <div class="result-amt" id="i_50">$0.00</div>
+    <div class="result-sub" id="i_sub">Per Media Buying Agreement Section 5</div>
+  </div>
+
+  <div class="calc-note" id="i_note">
+    ⚡ All figures from your weekly P&L data<br>
+    📦 Shipping $6.31/order (USPS Ground Advantage) · 💳 Processing 2.9% of gross revenue<br>
+    ✅ No commission on zero or negative periods — per contract Section 4
+  </div>
+</div>
+
+<!-- ══ GOALS ══ -->
+<div class="section-title">🎯 Monthly Goal Progress</div>
+<div class="goals">
+  <div class="goal"><div class="goal-head"><div class="goal-name">$10K / Month</div><span>🥉</span></div><div class="goal-nums" id="g10t">$0 / $10,000</div><div class="goal-track"><div class="goal-bar" id="g10b" style="width:0%;background:linear-gradient(90deg,#00d68f,#00b87a)"></div></div><div class="goal-pct" id="g10p">0.0%</div></div>
+  <div class="goal"><div class="goal-head"><div class="goal-name">$30K / Month</div><span>🥈</span></div><div class="goal-nums" id="g30t">$0 / $30,000</div><div class="goal-track"><div class="goal-bar" id="g30b" style="width:0%;background:linear-gradient(90deg,#3b82f6,#1d4ed8)"></div></div><div class="goal-pct" id="g30p">0.0%</div></div>
+  <div class="goal"><div class="goal-head"><div class="goal-name">$100K / Month</div><span>🥇</span></div><div class="goal-nums" id="g100t">$0 / $100,000</div><div class="goal-track"><div class="goal-bar" id="g100b" style="width:0%;background:linear-gradient(90deg,#f59e0b,#d97706)"></div></div><div class="goal-pct" id="g100p">0.0%</div></div>
+</div>
+
+<!-- ══ SALES OVERVIEW ══ -->
+<div class="section-title">Sales Overview</div>
+<div class="sum-row">
+  <div class="scard"><div class="s-label">Gross Sales</div><div class="s-val neu" id="ov_gross">$0</div></div>
+  <div class="scard"><div class="s-label">Net Sales</div><div class="s-val neu" id="ov_net">$0</div></div>
+  <div class="scard"><div class="s-label">Total Ad Spend</div><div class="s-val neu" id="ov_ads">$0</div></div>
+  <div class="scard g"><div class="s-label">Net Profit</div><div class="s-val" id="ov_profit">$0</div></div>
+</div>
+
+<div class="section-title">Platform Breakdown</div>
+<div class="plat-row" style="grid-template-columns:repeat(4,1fr)">
+  <div class="scard r"><div class="s-label"><span class="dot" style="background:var(--rumble)"></span>Rumble Spend</div><div class="s-val rcol" id="p_rspend">$0</div></div>
+  <div class="scard r"><div class="s-label"><span class="dot" style="background:var(--rumble)"></span>Rumble ROAS</div><div class="s-val rcol" id="p_rroas">—</div><div class="s-sub" id="p_rroas_s"></div></div>
+  <div class="scard n"><div class="s-label"><span class="dot" style="background:var(--newsbreak)"></span>NewsBreak Spend</div><div class="s-val ncol" id="p_nspend">$0</div></div>
+  <div class="scard n"><div class="s-label"><span class="dot" style="background:var(--newsbreak)"></span>NewsBreak ROAS</div><div class="s-val ncol" id="p_nroas">—</div><div class="s-sub" id="p_nroas_s"></div></div>
+</div>
+<div class="plat-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:2rem">
+  <div class="scard" style="border-color:rgba(59,130,246,0.2);background:rgba(59,130,246,0.03)"><div class="s-label"><span class="dot" style="background:#3b82f6"></span>Meta Spend</div><div class="s-val" style="color:#6fa8f7" id="p_mspend">$0</div></div>
+  <div class="scard" style="border-color:rgba(59,130,246,0.2);background:rgba(59,130,246,0.03)"><div class="s-label"><span class="dot" style="background:#3b82f6"></span>Meta ROAS</div><div class="s-val" style="color:#6fa8f7" id="p_mroas">—</div><div class="s-sub" id="p_mroas_s"></div></div>
+  <div class="scard" style="border-color:rgba(238,29,82,0.2);background:rgba(238,29,82,0.03)"><div class="s-label"><span class="dot" style="background:#ee1d52"></span>TikTok Spend</div><div class="s-val" style="color:#ff6b8a" id="p_tspend">$0</div></div>
+  <div class="scard" style="border-color:rgba(238,29,82,0.2);background:rgba(238,29,82,0.03)"><div class="s-label"><span class="dot" style="background:#ee1d52"></span>TikTok ROAS</div><div class="s-val" style="color:#ff6b8a" id="p_troas">—</div><div class="s-sub" id="p_troas_s"></div></div>
+</div>
+
+<!-- ══ CHARTS ══ -->
+<div class="charts">
+  <div class="chart-panel">
+    <div class="chart-title">Net Profit by Week</div>
+    <div class="chart-wrap"><canvas id="cPL"></canvas></div>
+  </div>
+  <div class="chart-panel">
+    <div class="chart-title">
+      ROAS by Platform
+      <div class="legend">
+        <div class="li"><div class="ldot" style="background:#a8d56e"></div>Rumble</div>
+        <div class="li"><div class="ldot" style="background:#f0a050"></div>NewsBreak</div>
+        <div class="li"><div class="ldot" style="background:var(--green)"></div>Overall</div>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="cROAS"></canvas></div>
+  </div>
+  <div class="chart-panel">
+    <div class="chart-title">Weekly ROAS</div>
+    <div id="roas_bars" style="overflow-y:auto;max-height:210px;padding-right:4px"></div>
+  </div>
+</div>
+
+<!-- ══ WEEKLY TABLE ══ -->
+<div class="tbl-panel">
+  <div class="tbl-head">
+    <span class="tbl-title">Weekly Entries</span>
+    <span class="tbl-hint">Tab between cells · saves automatically</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Week Range</th>
+          <th>Gross Sales</th>
+          <th>Discounts</th>
+          <th>Net Sales</th>
+          <th>Items Sold</th>
+          <th>Qty Ordered</th>
+          <th style="color:var(--green)">Actual Orders</th>
+          <th>COGS</th>
+          <th>Gross Profit</th>
+          <th class="rh">Rumble Spend</th>
+          <th class="rh">Rumble Sales</th>
+          <th class="nh">NB Spend</th>
+          <th class="nh">NB Sales</th>
+          <th style="color:#6fa8f7">Meta Spend</th>
+          <th style="color:#6fa8f7">Meta Sales</th>
+          <th style="color:#ff6b8a">TikTok Spend</th>
+          <th style="color:#ff6b8a">TikTok Sales</th>
+          <th>Shopify Fees</th>
+          <th>Apps/Tools</th>
+          <th>Refunds</th>
+          <th class="gh">Total Spend</th>
+          <th class="rh">R ROAS</th>
+          <th class="nh">NB ROAS</th>
+          <th style="color:#6fa8f7">Meta ROAS</th>
+          <th style="color:#ff6b8a">TT ROAS</th>
+          <th>Net Profit</th>
+          <th class="gh">Steven 50%</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"><tr><td colspan="20"><div style="text-align:center;padding:3rem;color:var(--muted);font-family:var(--mono);font-size:13px">Loading data…</div></td></tr></tbody>
+      <tfoot id="tfoot"></tfoot>
+    </table>
+  </div>
+  <button class="add-row" onclick="addWeek()">+ Add Week</button>
+</div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+// SUPABASE
+// ════════════════════════════════════════
+const SB_URL  = 'https://yxynmhbxchomvvdanouz.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4eW5taGJ4Y2hvbXZ2ZGFub3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyOTk0MTMsImV4cCI6MjA5NDg3NTQxM30.AbBXoJqiRoNWdLyyBp8jvRyWs1OR3JX-j9mncWij64U';
+const sb = supabase.createClient(SB_URL, SB_ANON);
+
+// ════════════════════════════════════════
+// CONTRACT CONSTANTS — Section 5
+// ════════════════════════════════════════
+const SHIP_PER_ORDER = 6.31;   // USPS Ground Advantage
+const PROC_RATE      = 0.029;  // 2.9% payment processing
+
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
+let weeks = [];
+let plChart, roasChart;
+let invPeriod = 'current';
+
+// ════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════
+const n   = v => parseFloat(v) || 0;
+const $   = id => document.getElementById(id);
+const fmt = v => {
+  if (isNaN(v) || v === null) return '$0.00';
+  const a = Math.abs(v);
+  return (v < 0 ? '-$' : '$') + a.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+};
+const rFmt = v => v === null ? '—' : v.toFixed(2) + 'x';
+const pc   = v => v > 0 ? 'pos' : v < 0 ? 'neg' : 'neu';
+const rCls = v => v === null ? 'mut' : v >= 3 ? 'pos' : 'neg';
+
+function setStatus(state, txt) {
+  $('sdot').className = 'sdot ' + state;
+  $('stxt').textContent = txt;
+}
+function toast(msg, err) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (err ? ' err' : '') + ' show';
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+// ════════════════════════════════════════
+// CORE CALCULATION — Contract Section 5
+// Gross - COGS - Discounts - Shipping - Processing - AdSpend - Fees - Refunds = Net Profit
+// Steven gets 50% of Net Profit (min $0 — no commission on negative periods)
+// ════════════════════════════════════════
+function calcWeek(w) {
+  const gross    = n(w.gross);
+  const cogs     = n(w.cogs);
+  const disc     = n(w.discounts);
+  const rs       = n(w.rumble_spend);
+  const rsal     = n(w.rumble_sales);
+  const ns       = n(w.newsbreak_spend);
+  const nsal     = n(w.newsbreak_sales);
+  const ms       = n(w.meta_spend);
+  const msal     = n(w.meta_sales);
+  const ts       = n(w.tiktok_spend);
+  const tsal     = n(w.tiktok_sales);
+  const ads      = rs + ns + ms + ts;
+  // Use actual_orders if available (real Shopify order count, not item count)
+  // qty field often counts bundle items not orders — actual_orders is more accurate
+  const orders   = n(w.actual_orders) > 0 ? n(w.actual_orders) : (n(w.qty) > 0 ? n(w.qty) : Math.round(gross / 49.95));
+  const ship     = orders * SHIP_PER_ORDER;
+  const proc     = gross * PROC_RATE;
+  const fees     = n(w.shopify_fees) + n(w.tools);
+  const ref      = n(w.refunds);
+
+  // True net profit per contract Section 5
+  const netProfit = gross - cogs - disc - ads - ship - proc - fees - ref;
+
+  // Steven's 50% — never negative per Section 4
+  const steven50 = Math.max(0, netProfit * 0.5);
+
+  const rRoas = (rs > 0 && rsal > 0) ? rsal / rs : null;
+  const nRoas = (ns > 0 && nsal > 0) ? nsal / ns : null;
+  const mRoas = (ms > 0 && msal > 0) ? msal / ms : null;
+  const tRoas = (ts > 0 && tsal > 0) ? tsal / ts : null;
+  const oRoas = (ads > 0 && (rsal + nsal + msal + tsal) > 0) ? (rsal + nsal + msal + tsal) / ads : null;
+
+  return { gross, cogs, disc, rs, rsal, ns, nsal, ms, msal, ts, tsal, ads, orders, ship, proc, fees, ref, netProfit, steven50, rRoas, nRoas, mRoas, tRoas, oRoas };
+}
+
+// ════════════════════════════════════════
+// COMMISSION SECTION
+// ════════════════════════════════════════
+function updateCommission() {
+  const now = new Date(), cm = now.getMonth(), cy = now.getFullYear();
+  let mtdRev = 0, mtd50 = 0, atRev = 0, at50 = 0;
+
+  weeks.forEach(w => {
+    const c = calcWeek(w);
+    atRev += n(w.gross);
+    at50  += c.steven50;
+    if (!w.range) return;
+    const parts = w.range.split(' - ')[0].trim().split('/');
+    if (parts.length >= 2) {
+      const wm = parseInt(parts[0]) - 1;
+      const wy = parts[2] ? (2000 + parseInt(parts[2])) : cy;
+      if (wm === cm && wy === cy) { mtdRev += n(w.gross); mtd50 += c.steven50; }
+    }
+  });
+
+  // Today estimate: 1/7 of last week
+  const lastW = weeks.length > 0 ? weeks[weeks.length - 1] : null;
+  const todayRev = lastW ? n(lastW.gross) / 7 : 0;
+  const todayOrd = lastW ? Math.round(n(lastW.qty) / 7) : 0;
+  const lastC    = lastW ? calcWeek(lastW) : null;
+  // Use last week's actual margin for today estimate
+  const todayNet = lastC && n(lastW.gross) > 0 ? (lastC.netProfit / n(lastW.gross)) * todayRev : todayRev * 0.132;
+  const today50  = Math.max(0, todayNet * 0.5);
+
+  const dim  = new Date(cy, cm + 1, 0).getDate();
+  const dLeft = dim - now.getDate();
+  const actual = parseFloat(localStorage.getItem('btl_pay_' + cy + '_' + cm) || '0');
+  const mtdDisp = actual > 0 ? actual : mtd50;
+  const proj = now.getDate() > 0 ? (mtdDisp / now.getDate()) * dim : 0;
+  const wkAvg = weeks.length > 0 ? at50 / weeks.length : 0;
+
+  $('t_rev').textContent  = fmt(todayRev);
+  $('t_net').textContent  = fmt(todayNet);
+  $('t_50').textContent   = fmt(today50);
+  $('t_ord').textContent  = todayOrd;
+  $('m_rev').textContent  = fmt(mtdRev);
+  $('m_50').textContent   = fmt(mtdDisp);
+  $('m_note').textContent = actual > 0 ? 'Actual ShineOn payment' : 'True net × 50%';
+  $('m_proj').textContent = fmt(proj);
+  $('m_days').textContent = dLeft + ' days left in ' + now.toLocaleString('default', {month:'long'});
+  $('a_rev').textContent  = fmt(atRev);
+  $('a_50').textContent   = fmt(at50);
+  $('a_avg').textContent  = fmt(wkAvg);
+
+  updateGoals(mtdDisp);
+  updateInvoice();
+}
+
+function saveActual() {
+  const now = new Date();
+  const key = 'btl_pay_' + now.getFullYear() + '_' + now.getMonth();
+  const val = parseFloat($('actual_pay').value) || 0;
+  localStorage.setItem(key, val.toString());
+  updateCommission();
+  if (val > 0) toast('Payment saved ✓');
+}
+
+function loadActual() {
+  const now = new Date();
+  const val = localStorage.getItem('btl_pay_' + now.getFullYear() + '_' + now.getMonth());
+  if (val && parseFloat(val) > 0) $('actual_pay').value = val;
+}
+
+// ════════════════════════════════════════
+// GOALS
+// ════════════════════════════════════════
+function updateGoals(total) {
+  [[10000,'10'],[30000,'30'],[100000,'100']].forEach(([t, id]) => {
+    const pct = Math.min(100, (total / t) * 100);
+    $(('g' + id + 't')).textContent = fmt(total) + ' / $' + t.toLocaleString('en-US');
+    $(('g' + id + 'b')).style.width = pct + '%';
+    $(('g' + id + 'p')).textContent = pct.toFixed(1) + '%';
+  });
+}
+
+// ════════════════════════════════════════
+// INVOICE / PERIOD CALCULATOR
+// ════════════════════════════════════════
+function setPeriod(p, btn) {
+  invPeriod = p;
+  document.querySelectorAll('.pbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateInvoice();
+}
+
+function getInvWeeks() {
+  const active = weeks.filter(w => n(w.gross) > 0);
+  const now = new Date(), cm = now.getMonth(), cy = now.getFullYear();
+  if (invPeriod === 'previous') return active.length >= 2 ? active.slice(-2, -1) : [];
+  if (invPeriod === 'month') {
+    return weeks.filter(w => {
+      if (!w.range) return false;
+      const p = w.range.split(' - ')[0].trim().split('/');
+      if (p.length < 2) return false;
+      const wm = parseInt(p[0]) - 1, wy = p[2] ? (2000 + parseInt(p[2])) : cy;
+      return wm === cm && wy === cy;
+    });
+  }
+  return active.slice(-1);
+}
+
+function periodLabel(ws) {
+  if (!ws.length) return 'No data';
+  if (ws.length === 1) return ws[0].range || '—';
+  const s = ws[0].range ? ws[0].range.split(' - ')[0] : '—';
+  const e = ws[ws.length-1].range ? ws[ws.length-1].range.split(' - ')[1] : '—';
+  return s + ' → ' + e;
+}
+
+function updateInvoice() {
+  const ws = getInvWeeks();
+  let gross=0, cogs=0, disc=0, ads=0, orders=0, ship=0, proc=0, fees=0, ref=0;
+  ws.forEach(w => {
+    const c = calcWeek(w);
+    gross  += c.gross;
+    cogs   += c.cogs;
+    disc   += c.disc;
+    ads    += c.ads;
+    orders += c.orders;
+    ship   += c.ship;
+    proc   += c.proc;
+    fees   += c.fees;
+    ref    += c.ref;
+  });
+  const netP = gross - cogs - disc - ads - ship - proc - fees - ref;
+  const s50  = Math.max(0, netP * 0.5);
+
+  $('inv_period').textContent = periodLabel(ws);
+  $('i_gross').textContent = fmt(gross);
+  $('i_cogs').textContent  = '-' + fmt(cogs);
+  $('i_disc').textContent  = '-' + fmt(disc);
+  $('i_ads').textContent   = '-' + fmt(ads);
+  $('i_ship').textContent  = '-' + fmt(ship);
+  $('i_proc').textContent  = '-' + fmt(proc);
+  $('i_fees').textContent  = '-' + fmt(fees);
+  $('i_ref').textContent   = '-' + fmt(ref);
+  $('i_net').textContent   = fmt(netP);
+  $('i_net').className     = 'cn-val ' + (netP >= 0 ? 'grn' : 'red');
+  $('i_50').textContent    = fmt(s50);
+  $('i_50').style.color    = s50 > 0 ? 'var(--green)' : 'var(--red)';
+  $('i_sub').textContent   = ws.length + ' week(s) · ' + orders + ' orders · Per Media Buying Agreement Section 5';
+  $('i_note').innerHTML    =
+    '⚡ All figures from your weekly P&L entries · Per Media Buying Agreement Section 5<br>' +
+    '📦 Shipping $6.31/order (USPS Ground Advantage) · 💳 Payment processing 2.9% of gross<br>' +
+    (s50 > 0
+      ? '✅ <strong style="color:var(--green)">Steven earns ' + fmt(s50) + '</strong> for ' + periodLabel(ws)
+      : '⚠️ No commission this period — net profit is zero or negative (per contract Section 4)');
+}
+
+// ════════════════════════════════════════
+// SUMMARY CARDS
+// ════════════════════════════════════════
+function updateSummary() {
+  let tG=0, tN=0, tAds=0, tP=0, tRs=0, tRsal=0, tNs=0, tNsal=0, tMs=0, tMsal=0, tTs=0, tTsal=0;
+  weeks.forEach(w => {
+    const c = calcWeek(w);
+    tG += n(w.gross); tN += n(w.netsales);
+    tAds += c.ads; tP += c.netProfit;
+    tRs += c.rs; tRsal += c.rsal;
+    tNs += c.ns; tNsal += c.nsal;
+    tMs += c.ms; tMsal += c.msal;
+    tTs += c.ts; tTsal += c.tsal;
+  });
+  $('ov_gross').textContent = fmt(tG);
+  $('ov_net').textContent   = fmt(tN);
+  $('ov_ads').textContent   = fmt(tAds);
+  const pe = $('ov_profit');
+  pe.textContent = fmt(tP); pe.className = 's-val ' + pc(tP);
+
+  $('p_rspend').textContent = fmt(tRs);
+  if (tRs > 0 && tRsal > 0) {
+    const r = tRsal / tRs;
+    $('p_rroas').textContent = r.toFixed(2) + 'x';
+    $('p_rroas').className = 's-val ' + (r >= 3 ? 'pos' : 'neg');
+    $('p_rroas_s').textContent = r >= 3 ? '✓ above 3x target' : 'below 3x target';
+  } else {
+    $('p_rroas').textContent = '—'; $('p_rroas').className = 's-val rcol';
+    $('p_rroas_s').textContent = tRs > 0 ? 'enter sales' : 'no spend yet';
+  }
+  $('p_nspend').textContent = fmt(tNs);
+  if (tNs > 0 && tNsal > 0) {
+    const r = tNsal / tNs;
+    $('p_nroas').textContent = r.toFixed(2) + 'x';
+    $('p_nroas').className = 's-val ' + (r >= 3 ? 'pos' : 'neg');
+    $('p_nroas_s').textContent = r >= 3 ? '✓ above 3x target' : 'below 3x target';
+  } else {
+    $('p_nroas').textContent = '—'; $('p_nroas').className = 's-val ncol';
+    $('p_nroas_s').textContent = tNs > 0 ? 'enter sales' : 'no spend yet';
+  }
+
+  // Meta
+  $('p_mspend').textContent = fmt(tMs);
+  if (tMs > 0 && tMsal > 0) {
+    const r = tMsal / tMs;
+    $('p_mroas').textContent = r.toFixed(2) + 'x';
+    $('p_mroas').style.color = r >= 3 ? 'var(--green)' : 'var(--red)';
+    $('p_mroas_s').textContent = r >= 3 ? '✓ above 3x target' : 'below 3x target';
+  } else {
+    $('p_mroas').textContent = '—';
+    $('p_mroas_s').textContent = tMs > 0 ? 'enter sales' : 'no spend yet';
+  }
+
+  // TikTok
+  $('p_tspend').textContent = fmt(tTs);
+  if (tTs > 0 && tTsal > 0) {
+    const r = tTsal / tTs;
+    $('p_troas').textContent = r.toFixed(2) + 'x';
+    $('p_troas').style.color = r >= 3 ? 'var(--green)' : 'var(--red)';
+    $('p_troas_s').textContent = r >= 3 ? '✓ above 3x target' : 'below 3x target';
+  } else {
+    $('p_troas').textContent = '—';
+    $('p_troas_s').textContent = tTs > 0 ? 'enter sales' : 'no spend yet';
+  }
+}
+
+// ════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════
+const chartOpts = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend:{display:false}, tooltip:{backgroundColor:'#141b22',borderColor:'rgba(255,255,255,0.07)',borderWidth:1} },
+  scales: {
+    y:{ticks:{color:'#4e5c6a',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(255,255,255,0.04)'},border:{color:'transparent'}},
+    x:{ticks:{color:'#4e5c6a',font:{family:'JetBrains Mono',size:10},maxRotation:20},grid:{display:false},border:{color:'transparent'}}
+  }
+};
+
+function updateCharts() {
+  const active = weeks.filter(w => n(w.gross) > 0 || n(w.rumble_spend) > 0);
+  const labels = active.map(w => (w.range||'').replace(' - ','–').replace(/\/26/g,''));
+  const profits = active.map(w => +calcWeek(w).netProfit.toFixed(2));
+  const colors  = profits.map(p => p >= 0 ? '#00d68f' : '#ff4d6d');
+
+  if (plChart) {
+    plChart.data.labels = labels;
+    plChart.data.datasets[0].data = profits;
+    plChart.data.datasets[0].backgroundColor = colors;
+    plChart.update();
+  } else {
+    plChart = new Chart($('cPL'), {
+      type:'bar',
+      data:{labels, datasets:[{label:'Net Profit', data:profits, backgroundColor:colors, borderRadius:4, borderSkipped:false}]},
+      options:{...chartOpts, plugins:{...chartOpts.plugins, tooltip:{...chartOpts.plugins.tooltip, callbacks:{label:c=>' '+fmt(c.raw)}}},
+        scales:{...chartOpts.scales, y:{...chartOpts.scales.y, ticks:{...chartOpts.scales.y.ticks, callback:v=>(v<0?'-$':'$')+Math.abs(v).toLocaleString()}}}}
+    });
+  }
+
+  const rLabels = active.map(w => (w.range||'').split(' - ')[0]);
+  const ds = [
+    {label:'Rumble',    data:active.map(w=>{const r=calcWeek(w).rRoas;return r!==null?+r.toFixed(2):null;}), borderColor:'#a8d56e',backgroundColor:'rgba(168,213,110,.07)',tension:.3,spanGaps:true,pointRadius:4,pointBackgroundColor:'#a8d56e'},
+    {label:'NewsBreak', data:active.map(w=>{const r=calcWeek(w).nRoas;return r!==null?+r.toFixed(2):null;}), borderColor:'#f0a050',backgroundColor:'rgba(240,160,80,.07)',tension:.3,spanGaps:true,pointRadius:4,pointBackgroundColor:'#f0a050'},
+    {label:'Overall',   data:active.map(w=>{const r=calcWeek(w).oRoas;return r!==null?+r.toFixed(2):null;}), borderColor:'#00d68f',backgroundColor:'rgba(0,214,143,.04)',tension:.3,spanGaps:true,pointRadius:4,pointBackgroundColor:'#00d68f',borderDash:[4,3]},
+  ];
+  if (roasChart) {
+    roasChart.data.labels = rLabels; roasChart.data.datasets = ds; roasChart.update();
+  } else {
+    roasChart = new Chart($('cROAS'), {
+      type:'line', data:{labels:rLabels, datasets:ds},
+      options:{...chartOpts, plugins:{...chartOpts.plugins, tooltip:{...chartOpts.plugins.tooltip, callbacks:{label:c=>` ${c.dataset.label}: ${c.raw!==null?c.raw+'x':'—'}`}}},
+        scales:{...chartOpts.scales, y:{...chartOpts.scales.y, ticks:{...chartOpts.scales.y.ticks, callback:v=>v+'x'}}}}
+    });
+  }
+
+  // ROAS bars sidebar
+  const rb = $('roas_bars');
+  const adW = active.filter(w => n(w.rumble_spend) > 0 || n(w.newsbreak_spend) > 0);
+  if (!adW.length) { rb.innerHTML='<p style="color:var(--muted);font-size:12px;font-family:var(--mono)">No ad data yet.</p>'; return; }
+  const maxR = Math.max(...adW.map(w => { const c=calcWeek(w); return Math.max(c.rRoas||0, c.nRoas||0, c.oRoas||0); }), 4);
+  rb.innerHTML = adW.map(w => {
+    const c = calcWeek(w);
+    const best = c.oRoas !== null ? c.oRoas : (c.rRoas !== null ? c.rRoas : c.nRoas);
+    if (best === null) return '';
+    const pct = Math.min((best / maxR) * 100, 100).toFixed(1);
+    const good = best >= 3;
+    const parts = [];
+    if (c.rRoas !== null) parts.push(`<span class="rp" style="color:#a8d56e">● R ${c.rRoas.toFixed(2)}x</span>`);
+    if (c.nRoas !== null) parts.push(`<span class="rp" style="color:#f0a050">● NB ${c.nRoas.toFixed(2)}x</span>`);
+    return `<div class="roas-item">
+      <div class="ri-head"><span class="ri-range">${(w.range||'').split(' - ')[0]}</span><span class="ri-val" style="color:${good?'var(--green)':'var(--red)'}">${best.toFixed(2)}x</span></div>
+      <div class="ri-track"><div class="ri-bar" style="width:${pct}%;background:${good?'var(--green)':'var(--red)'}"></div></div>
+      <div class="ri-plats">${parts.join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+// SAVE FIELD
+// ════════════════════════════════════════
+async function saveField(rowId, field, value, idx) {
+  setStatus('saving', 'Saving…');
+  const { error } = await sb.from('weekly_pl').update({[field]: value}).eq('id', rowId);
+  if (error) { setStatus('err','Save failed'); toast('Save failed',true); return; }
+  weeks[idx][field] = value;
+  refreshRow(rowId, idx);
+  updateSummary(); updateCharts(); updateCommission();
+  setTimeout(() => setStatus('live','Live'), 1200);
+}
+
+function refreshRow(rowId, idx) {
+  const c = calcWeek(weeks[idx]);
+  const set = (id, val, cls) => { const el = $(id); if (el) { el.textContent = val; if (cls) el.className = 'cmp ' + cls; }};
+  set('ts-'+rowId, c.ads > 0 ? fmt(c.ads) : '—', c.ads > 0 ? '' : 'mut');
+  set('rr-'+rowId, rFmt(c.rRoas), rCls(c.rRoas));
+  set('nr-'+rowId, rFmt(c.nRoas), rCls(c.nRoas));
+  set('mr-'+rowId, rFmt(c.mRoas), rCls(c.mRoas));
+  set('tr-'+rowId, rFmt(c.tRoas), rCls(c.tRoas));
+  set('np-'+rowId, fmt(c.netProfit), pc(c.netProfit));
+  set('s5-'+rowId, fmt(c.steven50), 'pos');
+  renderTotals();
+}
+
+// ════════════════════════════════════════
+// MAKE INPUT
+// ════════════════════════════════════════
+function mkInput(type, val, rowId, idx, field, ph) {
+  const i = document.createElement('input');
+  i.type = type;
+  i.value = (val !== null && val !== undefined && val !== 0 && val !== '') ? val : '';
+  i.placeholder = ph || '0';
+  if (type === 'number') i.step = '0.01';
+  i.addEventListener('change', async function() {
+    const v = type === 'text' ? this.value : (parseFloat(this.value) || 0);
+    await saveField(rowId, field, v, idx);
+  });
+  return i;
+}
+
+// ════════════════════════════════════════
+// RENDER TABLE
+// ════════════════════════════════════════
+function renderTable() {
+  const tbody = $('tbody');
+  tbody.innerHTML = '';
+
+  weeks.forEach((w, i) => {
+    const c = calcWeek(w);
+    const tr = document.createElement('tr');
+
+    // Helper to add an editable cell
+    const addCell = (type, field, val, cls, ph) => {
+      const td = document.createElement('td');
+      if (cls) td.className = cls;
+      td.appendChild(mkInput(type, val, w.id, i, field, ph));
+      tr.appendChild(td);
+    };
+
+    // Helper to add a computed cell
+    const addComp = (id, val, cls) => {
+      const td = document.createElement('td');
+      const div = document.createElement('div');
+      div.id = id; div.className = 'cmp ' + (cls||'neu'); div.textContent = val;
+      td.appendChild(div); tr.appendChild(td);
+    };
+
+    // Shopify fields (manually entered from SDG report)
+    addCell('text',   'range',       w.range,       '',   'e.g. 6/7/26 - 6/13/26');
+    addCell('number', 'gross',       w.gross,       '',   '0');
+    addCell('number', 'discounts',   w.discounts,   '',   '0');
+    addCell('number', 'netsales',    w.netsales,    '',   '0');
+    addCell('number', 'items',         w.items,         '',   '0');
+    addCell('number', 'qty',           w.qty,           '',   '0');
+    addCell('number', 'actual_orders', w.actual_orders, '',   'from Shopify');
+    addCell('number', 'cogs',          w.cogs,          '',   '0');
+    addCell('number', 'gross_profit',w.gross_profit,'',   'from Shopify');
+
+    // Ad platform fields (manual — only 4 you enter)
+    addCell('number', 'rumble_spend',    w.rumble_spend,    'rc', '0');
+    addCell('number', 'rumble_sales',    w.rumble_sales,    'rc', '0');
+    addCell('number', 'newsbreak_spend', w.newsbreak_spend, 'nc', '0');
+    addCell('number', 'newsbreak_sales', w.newsbreak_sales, 'nc', '0');
+    addCell('number', 'meta_spend',      w.meta_spend,      'mc', '0');
+    addCell('number', 'meta_sales',      w.meta_sales,      'mc', '0');
+    addCell('number', 'tiktok_spend',    w.tiktok_spend,    'tc', '0');
+    addCell('number', 'tiktok_sales',    w.tiktok_sales,    'tc', '0');
+
+    // Fee fields
+    addCell('number', 'shopify_fees', w.shopify_fees, '', '0');
+    addCell('number', 'tools',        w.tools,        '', '0');
+    addCell('number', 'refunds',      w.refunds,      '', '0');
+
+    // Computed columns
+    addComp('ts-'+w.id, c.ads > 0 ? fmt(c.ads) : '—', c.ads > 0 ? '' : 'mut');
+    addComp('rr-'+w.id, rFmt(c.rRoas), rCls(c.rRoas));
+    addComp('nr-'+w.id, rFmt(c.nRoas), rCls(c.nRoas));
+    addComp('mr-'+w.id, rFmt(c.mRoas), rCls(c.mRoas));
+    addComp('tr-'+w.id, rFmt(c.tRoas), rCls(c.tRoas));
+    addComp('np-'+w.id, fmt(c.netProfit), pc(c.netProfit));
+    addComp('s5-'+w.id, fmt(c.steven50), 'pos');
+
+    tbody.appendChild(tr);
+  });
+
+  renderTotals();
+  updateSummary();
+  updateCharts();
+  updateCommission();
+}
+
+// ════════════════════════════════════════
+// TOTALS ROW
+// ════════════════════════════════════════
+function renderTotals() {
+  let tG=0,tD=0,tN=0,tI=0,tQ=0,tC=0,tGP=0;
+  let tRs=0,tRsal=0,tNs=0,tNsal=0,tMs=0,tMsal=0,tTs=0,tTsal=0,tAds=0;
+  let tSF=0,tT=0,tRef=0,tP=0,tS50=0;
+
+  weeks.forEach(w => {
+    const c = calcWeek(w);
+    tG+=n(w.gross); tD+=n(w.discounts); tN+=n(w.netsales);
+    tI+=n(w.items); tQ+=n(w.qty); tC+=n(w.cogs); tGP+=n(w.gross_profit);
+    tRs+=c.rs; tRsal+=c.rsal; tNs+=c.ns; tNsal+=c.nsal;
+    tMs+=c.ms; tMsal+=c.msal; tTs+=c.ts; tTsal+=c.tsal;
+    tAds+=c.ads;
+    tSF+=n(w.shopify_fees); tT+=n(w.tools); tRef+=n(w.refunds);
+    tP+=c.netProfit; tS50+=c.steven50;
+  });
+
+  const rR = (tRs>0&&tRsal>0) ? (tRsal/tRs).toFixed(2)+'x' : '—';
+  const nR = (tNs>0&&tNsal>0) ? (tNsal/tNs).toFixed(2)+'x' : '—';
+  const mR = (tMs>0&&tMsal>0) ? (tMsal/tMs).toFixed(2)+'x' : (tMs>0?'enter sales':'—');
+  const tR = (tTs>0&&tTsal>0) ? (tTsal/tTs).toFixed(2)+'x' : (tTs>0?'enter sales':'—');
+
+  $('tfoot').innerHTML = `<tr class="tot">
+    <td><div class="cmp mut">TOTAL</div></td>
+    <td><div class="cmp">${fmt(tG)}</div></td>
+    <td><div class="cmp">${fmt(tD)}</div></td>
+    <td><div class="cmp">${fmt(tN)}</div></td>
+    <td><div class="cmp">${tI}</div></td>
+    <td><div class="cmp">${tQ}</div></td>
+    <td><div class="cmp">${fmt(tC)}</div></td>
+    <td><div class="cmp">${fmt(tGP)}</div></td>
+    <td><div class="cmp rcol">${fmt(tRs)}</div></td>
+    <td><div class="cmp rcol">${tRsal>0?fmt(tRsal):'—'}</div></td>
+    <td><div class="cmp ncol">${fmt(tNs)}</div></td>
+    <td><div class="cmp ncol">${tNsal>0?fmt(tNsal):'—'}</div></td>
+    <td><div class="cmp" style="color:#6fa8f7">${fmt(tMs)}</div></td>
+    <td><div class="cmp" style="color:#6fa8f7">${tMsal>0?fmt(tMsal):'—'}</div></td>
+    <td><div class="cmp" style="color:#ff6b8a">${fmt(tTs)}</div></td>
+    <td><div class="cmp" style="color:#ff6b8a">${tTsal>0?fmt(tTsal):'—'}</div></td>
+    <td><div class="cmp">${fmt(tSF)}</div></td>
+    <td><div class="cmp">${fmt(tT)}</div></td>
+    <td><div class="cmp">${fmt(tRef)}</div></td>
+    <td><div class="cmp">${fmt(tAds)}</div></td>
+    <td><div class="cmp ${rR!=='—'?(tRsal/tRs>=3?'pos':'neg'):'mut'}">${rR}</div></td>
+    <td><div class="cmp ${nR!=='—'?(tNsal/tNs>=3?'pos':'neg'):'mut'}">${nR}</div></td>
+    <td><div class="cmp ${pc(tP)}">${fmt(tP)}</div></td>
+    <td><div class="cmp pos">${fmt(tS50)}</div></td>
+  </tr>`;
+}
+
+// ════════════════════════════════════════
+// ADD WEEK
+// ════════════════════════════════════════
+function nextRange() {
+  if (!weeks.length || !weeks[weeks.length-1].range) return '';
+  const parts = weeks[weeks.length-1].range.split(' - ');
+  if (parts.length < 2) return '';
+  const endStr = parts[1].trim();
+  const ep = endStr.split('/');
+  if (ep.length < 2) return '';
+  const yr = ep[2] ? 2000+parseInt(ep[2]) : new Date().getFullYear();
+  const end = new Date(yr, parseInt(ep[0])-1, parseInt(ep[1]));
+  const s = new Date(end); s.setDate(s.getDate()+1);
+  const e = new Date(s);   e.setDate(e.getDate()+6);
+  const f = d => `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`;
+  return `${f(s)} - ${f(e)}`;
+}
+
+async function addWeek() {
+  const nw = {
+    range:'', gross:0, discounts:0, netsales:0, items:0, qty:0, actual_orders:0, cogs:0, gross_profit:0,
+    rumble_spend:0, rumble_sales:0, newsbreak_spend:0, newsbreak_sales:0,
+    meta_spend:0, meta_sales:0, tiktok_spend:0, tiktok_sales:0,
+    shopify_fees:0, tools:0, refunds:0
+  };
+  nw.range = nextRange();
+  const { data, error } = await sb.from('weekly_pl').insert(nw).select();
+  if (error) { toast('Error adding week', true); return; }
+  weeks.push(data[0]);
+  renderTable();
+  setTimeout(() => {
+    const rows = document.querySelectorAll('#tbody tr');
+    rows[rows.length-1]?.scrollIntoView({behavior:'smooth',block:'center'});
+  }, 50);
+  toast('Week added ✓');
+}
+
+// ════════════════════════════════════════
+// EXPORT CSV
+// ════════════════════════════════════════
+function exportCSV() {
+  const headers = ['Week','Gross Sales','Discounts','Net Sales','Items','Orders','COGS','Gross Profit','Rumble Spend','Rumble Sales','NB Spend','NB Sales','Shopify Fees','Apps/Tools','Refunds','Total Ad Spend','Shipping','Processing','Rumble ROAS','NB ROAS','Net Profit','Steven 50%'];
+  const rows = weeks.map(w => {
+    const c = calcWeek(w);
+    return [w.range, c.gross, c.disc, n(w.netsales), n(w.items), c.orders, c.cogs, n(w.gross_profit),
+      c.rs, c.rsal, c.ns, c.nsal, n(w.shopify_fees), n(w.tools), c.ref,
+      c.ads.toFixed(2), c.ship.toFixed(2), c.proc.toFixed(2),
+      c.rRoas!==null?c.rRoas.toFixed(2):'', c.nRoas!==null?c.nRoas.toFixed(2):'',
+      c.netProfit.toFixed(2), c.steven50.toFixed(2)].join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = 'BringTheLove_PL_2026.csv';
+  a.click();
+  toast('CSV exported ✓');
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+async function init() {
+  try {
+    const { data, error } = await sb.from('weekly_pl').select('*').order('id', {ascending:true});
+    if (error) throw error;
+    weeks = data || [];
+    renderTable();
+    setStatus('live', 'Live');
+  } catch(e) {
+    setStatus('err', 'Connection error');
+    console.error(e);
+    toast('Could not connect to Supabase', true);
+  }
+}
+
+init();
+loadActual();
+</script>
+</body>
+</html>
